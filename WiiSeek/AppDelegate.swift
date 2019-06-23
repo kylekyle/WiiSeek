@@ -10,17 +10,19 @@ import Cocoa
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
-
-
-
-    func applicationDidFinishLaunching(_ aNotification: Notification) {
-        // Insert code here to initialize your application
+    let manager = Manager()
+    
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        self.manager.startSearch()
+        
+        // "Play" button clicked
+        subscribe(.stopSearch) { (_) in
+            self.manager.stopSearch()
+        }
     }
-
-    func applicationWillTerminate(_ aNotification: Notification) {
-        // Insert code here to tear down your application
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        self.manager.cleanup()
     }
-
-
 }
 

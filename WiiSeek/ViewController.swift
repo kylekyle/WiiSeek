@@ -8,20 +8,30 @@
 
 import Cocoa
 
-class ViewController: NSViewController {
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
-    }
-
-    override var representedObject: Any? {
-        didSet {
-        // Update the view, if already loaded.
-        }
-    }
-
-
+// we'll use our own log function since os_log is not thread safe!?!?
+func log(_ message: String) {
+    publish(.log, message)
 }
 
+class ViewController: NSViewController {
+    
+    @IBAction func searchButton(_ sender: NSButton) {
+        publish(.stopSearch)
+    }
+    
+    @IBOutlet var textView: NSTextView!
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        subscribe(.log) {(message) in
+            let string = (message as! String) + "\n"
+            self.textView.textStorage?.append(NSAttributedString(
+                string: string, attributes: [
+                    NSAttributedString.Key.foregroundColor: NSColor.white,
+                    NSAttributedString.Key.font: NSFont.systemFont(ofSize: 16)
+                ])
+            )
+        }
+    }
+}
