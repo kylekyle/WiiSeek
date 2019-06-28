@@ -10,109 +10,96 @@ import Foundation
 import IOBluetooth
 
 class Wiimote {
-    var address: String
+    var name: String
+    var number: UInt8
+    var data: Channel
     var control: Channel
-    var interrupt: Channel
     var device: IOBluetoothDevice
-    var playerMask: UInt8 = 0b0001_0000
     
-    enum CommandType {
-        case rumbleOn
-        case rumbleOff
-        case ledOn
-        case ledOff
-    }
-    
-    let Commands: [CommandType: [UInt8]] = [
-        .ledOn:     [0xa2, 0x11, 0x00],
-        .ledOff:    [0xa2, 0x11, 0x00],
-        .rumbleOn:  [0xa2, 0x11, 0x01],
-        .rumbleOff: [0xa2, 0x11, 0x00]
-    ]
-    
-    class Channel: IOBluetoothL2CAPChannelDelegate {
-        var address: String
-        var psm: BluetoothL2CAPPSM
-        var channel: IOBluetoothL2CAPChannel?
-        var queue: DispatchQueue
-        
-        init(_ psm: Int, address: String) {
-            self.address = address
-            self.psm = BluetoothL2CAPPSM(psm)
-            self.queue = DispatchQueue(label: address)
-        }
-        
-        func l2capChannelOpenComplete(_ c: IOBluetoothL2CAPChannel!, status error: IOReturn) {
-            log("\(self.psm) channel opened on \(self.address)")
-        }
-        
-        func l2capChannelData(_ l2capChannel: IOBluetoothL2CAPChannel!, data dataPointer: UnsafeMutableRawPointer!, length dataLength: Int) {
-            log("Recieved data from \(self.address) on \(self.psm) channel")
-        }
-        
-        func close() {
-            channel?.close()
-        }
-    }
-    
-    init(_ device: IOBluetoothDevice, player: Int) {
+    init(_ device: IOBluetoothDevice, number: Int) {
         self.device = device
-        self.address = device.addressString!
-        self.control = Channel(kBluetoothL2CAPPSMHIDControl, address: self.address)
-        self.interrupt = Channel(kBluetoothL2CAPPSMHIDInterrupt, address: self.address)
+        self.number = UInt8(number)
+        self.name = "Wiimote \(number)"
         
-        for _ in (1..<player) {
-            playerMask = (playerMask << 1) | playerMask
+        self.control = Channel(
+            device: self.device,
+            name: "\(self.name) (control)",
+            psm: BluetoothL2CAPPSM(kBluetoothL2CAPPSMHIDControl)
+        )
+        
+        self.data = Channel(
+            device: self.device,
+            name: "\(self.name) (data)",
+            psm: BluetoothL2CAPPSM(kBluetoothL2CAPPSMHIDInterrupt)
+        )
+        
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {timer in
+            if self.data.ready && self.control.ready {
+                timer.invalidate()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    self.send(.muteSpeaker)
+                    self.send(.enableSpeaker)
+                    self.send(.writeMemory(0x04A20009, [0x01]))
+                    self.send(.writeMemory(0x04A20001, [0x08]))
+                    self.send(.writeMemory(0x04a20001, [0x00, 0x40, 0x70, 0x17, 0x60, 0x00, 0x00]))
+                    self.send(.writeMemory(0x04A20008, [0x01]))
+                    self.send(.unmuteSpeaker)
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        self.play()
+                    }
+                }
+            }
         }
-        
-        let cResult = device.openL2CAPChannelSync(&control.channel, withPSM: control.psm, delegate: control)
-        
-        guard cResult == kIOReturnSuccess else {
-            log("Failed to open control channel to \(self.address) (\(cResult))")
-            return
-        }
-        
-        let iResult = device.openL2CAPChannelSync(&interrupt.channel, withPSM: interrupt.psm, delegate: interrupt)
-
-        guard iResult == kIOReturnSuccess else {
-            log("Failed to open interrupt channel to \(self.address) (\(iResult))")
-            return
-        }
-        
-        rumble()
     }
     
-    func rumble() {
-        self.send(.rumbleOn)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.send(.rumbleOff)
-        }
-    }
-    
-    func send(_ type: CommandType) {
-        guard let channel = interrupt.channel else {
-            log("Cannot send command to \(self.address): No channels open!")
+    @objc func play() {
+        log("PLAYING")
+        let sourceURL = URL(fileURLWithPath: Bundle.main.resourcePath!)
+        let audio = sourceURL.appendingPathComponent("Audio.au")
+        log(audio.absoluteString)
+        
+        guard let data = NSData(contentsOf: audio) else {
+            log("could not load audio!")
             return
         }
         
-        var bytes = Commands[type]!
+        var start = 0
+        var buffer = [UInt8](repeating: 0x00, count: data.length)
+        data.getBytes(&buffer, length: data.length)
         
-        // mask in the player LED
-        if type != .ledOff {
-            bytes[bytes.count-1] = bytes[bytes.count-1] | playerMask
+        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) {timer in
+            let stop = min(start + 20, buffer.count)
+            self.send(.play(Array(buffer[start..<stop])))
+            
+            if stop >= buffer.count {
+                timer.invalidate()
+            } else {
+                start = stop
+            }
         }
-        
-        let error = channel.writeSync(&bytes, length: UInt16(bytes.count))
-        
-        if error != kIOReturnSuccess {
-            log("Could not execute command \(type) on \(self.address): \(error)")
+    }
+    
+    func blink() {
+        log("blink")
+    }
+    
+    func rumble(duration: Double = 0.5) {
+        self.send(.ledOn(self.number, rumble: true))
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            self.send(.ledOn(self.number, rumble: false))
         }
+    }
+    
+    func send(_ command: Command) {
+        self.data.send(command.bytes)
     }
     
     func cleanup() {
         self.control.close()
-        self.interrupt.close()
+        self.data.close()
         self.device.closeConnection()
-        log("Disconnected from \(self.address)")
+        log("\(self.name): disconnected")
     }
 }

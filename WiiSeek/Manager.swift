@@ -20,7 +20,7 @@ class Manager: IOBluetoothDeviceInquiryDelegate {
         inquiry.updateNewDeviceNames = true
 
         guard inquiry.start() == kIOReturnSuccess else {
-            log("Could not initiate bluetooth search")
+            log("The Bluetooth module is off or unresponsive")
             return
         }
     }
@@ -35,18 +35,27 @@ class Manager: IOBluetoothDeviceInquiryDelegate {
     }
 
     func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {
-        log("Discovered \(device.addressString!)")
+        guard device.classOfDevice == 0x002504 || device.classOfDevice == 0x000508 else {
+            log("Ignoring \(device.nameOrAddress!)")
+            return
+        }
         
-        // validate wiimote is actually a wiimote
-        if !device.isConnected() {
+        if device.isConnected() {
+            log("Baseband connection already established")
+        } else {
+            log("Establishing baseband connection ...")
+            
             let result = device.openConnection()
+            
             guard result == kIOReturnSuccess else {
                 log("Connection to \(device.addressString!) failed with IOReturn code \(result)")
                 return
             }
+            
+            log("connection established")
         }
         
-        let wiimote = Wiimote(device, player: wiimotes.count + 1)
+        let wiimote = Wiimote(device, number: wiimotes.count + 1)
         self.wiimotes.append(wiimote)
     }
 

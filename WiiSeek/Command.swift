@@ -1,0 +1,51 @@
+//
+//  Command.swift
+//  WiiSeek
+//
+//  Created by Kyle King on 6/27/19.
+//  Copyright © 2019 Kyle King. All rights reserved.
+//
+
+struct Command {
+    let bytes: [UInt8]
+    
+    static func ledOn(_ led: UInt8, rumble: Bool = false) -> Command {
+        return Command(bytes: [0xa2, 0x11, (8 << led) | (rumble ? 1 : 0)])
+    }
+    
+    static func ledOff(rumble: Bool = false) -> Command {
+        return Command(bytes: [0xa2, 0x11, (rumble ? 1 : 0)])
+    }
+    
+    // do not write more than 16 bytes
+    static func writeMemory(_ address: UInt32, _ data: [UInt8]) -> Command {
+        var buffer = [
+            0xa2, 0x16,
+            UInt8((address >> 24) & 0xff),
+            UInt8((address >> 16) & 0xff),
+            UInt8((address >> 8) & 0xff),
+            UInt8(address & 0xff),
+            UInt8(data.count)
+        ]
+        
+        buffer.append(contentsOf: data)
+        buffer.append(contentsOf: Array(repeating: 0, count: 16-data.count))
+        
+        return Command(bytes: buffer)
+    }
+    
+    // Do not send more than 20 bytes at a time
+    static func play(_ data: [UInt8]) -> Command {
+        var buffer: [UInt8] = [0xa2, 0x18, (UInt8(data.count << 3))]
+        
+        buffer.append(contentsOf: data[0..<data.count])
+        buffer.append(contentsOf: Array(repeating: 0, count: 20-data.count))
+        
+        return Command(bytes: buffer)
+    }
+    
+    static let muteSpeaker   = Command(bytes: [0xa2, 0x19, 0x04])
+    static let unmuteSpeaker = Command(bytes: [0xa2, 0x19, 0x00])
+    static let enableSpeaker = Command(bytes: [0xa2, 0x14, 0x04])
+    static let statusReport  = Command(bytes: [0xa2, 0x15, 0x00])
+}
