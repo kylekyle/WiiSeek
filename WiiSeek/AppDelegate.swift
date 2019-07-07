@@ -13,16 +13,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     let manager = Manager()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        self.manager.startSearch()
-        
-        // "Play" button clicked
-        subscribe(.stopSearch) { (_) in
-            self.manager.stopSearch()
-        }
-    }
-    
-    func applicationWillTerminate(_ notification: Notification) {
-        self.manager.cleanup()
+        Thread(
+            target: self.manager,
+            selector:#selector(self.manager.start),
+            object: nil
+        ).start()
     }
 }
-

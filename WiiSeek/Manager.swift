@@ -1,73 +1,45 @@
 //
-//  Manager.swift
-//  WiiSeek
+//  HIDDeviceMonitor.swift
+//  USBDeviceSwift
 //
-//  Created by Kyle King on 6/19/19.
+//  Created by Kyle King on 6/6/19.
 //  Copyright © 2019 Kyle King. All rights reserved.
 //
 
+import IOKit.hid
 import Foundation
-import IOBluetooth
 
-// someone's got to manage these wiimotes
-class Manager: IOBluetoothDeviceInquiryDelegate {
-    let maxWiimotes = 4
-    var wiimotes: [Wiimote] = []
-    var inquiry = IOBluetoothDeviceInquiry()
-
-    func startSearch() {
-        inquiry.delegate = self
-        inquiry.updateNewDeviceNames = true
-
-        guard inquiry.start() == kIOReturnSuccess else {
-            log("The Bluetooth module is off or unresponsive")
-            return
-        }
-    }
-
-    func stopSearch() {
-        self.inquiry.stop()
-        self.inquiry.delegate = nil
-    }
-
-    func deviceInquiryStarted(_ sender: IOBluetoothDeviceInquiry!) {
-        log("Searching for wiimotes ...")
-    }
-
-    func deviceInquiryDeviceFound(_ sender: IOBluetoothDeviceInquiry, device: IOBluetoothDevice) {
-        guard device.classOfDevice == 0x002504 || device.classOfDevice == 0x000508 else {
-            log("Ignoring \(device.nameOrAddress!)")
-            return
-        }
-        
-        if device.isConnected() {
-            log("Baseband connection already established")
-        } else {
-            log("Establishing baseband connection ...")
-            
-            let result = device.openConnection()
-            
-            guard result == kIOReturnSuccess else {
-                log("Connection to \(device.addressString!) failed with IOReturn code \(result)")
-                return
-            }
-            
-            log("connection established")
-        }
-        
-        let wiimote = Wiimote(device, number: wiimotes.count + 1)
-        self.wiimotes.append(wiimote)
-    }
-
-    func deviceInquiryComplete(_ sender: IOBluetoothDeviceInquiry!, error: IOReturn, aborted: Bool) {
-        log("Done searching for wiimotes")
-    }
+class Manager {
+    var wiimotes:[IOHIDDevice:Wiimote] = [:]
     
-    func cleanup() {
-        stopSearch()
+    @objc func start() {
+        let hid = IOHIDManagerCreate(kCFAllocatorDefault, IOOptionBits(kIOHIDOptionsTypeNone))
         
-        for wiimote in self.wiimotes {
-            wiimote.cleanup()
+        let matches = [
+            [kIOHIDProductIDKey: 0x0306, kIOHIDVendorIDKey: 0x057e],
+            [kIOHIDProductIDKey: 0x0306, kIOHIDVendorIDKey: 0x0330]
+        ]
+        
+        IOHIDManagerSetDeviceMatchingMultiple(hid, matches as CFArray)
+        IOHIDManagerScheduleWithRunLoop(hid, CFRunLoopGetCurrent(), CFRunLoopMode.defaultMode.rawValue);
+        IOHIDManagerOpen(hid, IOOptionBits(kIOHIDOptionsTypeNone));
+        
+        let added:IOHIDDeviceCallback = { context, status, sender, device in
+            let this = unsafeBitCast(context, to: Manager.self)
+            this.wiimotes[device] = Wiimote(device, number: this.wiimotes.count+1)
+            print("\(this.wiimotes[device]!) added")
         }
+        
+        IOHIDManagerRegisterDeviceMatchingCallback(hid, added, unsafeBitCast(self, to: UnsafeMutableRawPointer.self))
+        
+        let removed:IOHIDDeviceCallback = { context, status, sender, device in
+            let this = unsafeBitCast(context, to: Manager.self)
+            print("\(this.wiimotes[device]!) removed")
+            this.wiimotes.removeValue(forKey: device)
+        }
+        
+        IOHIDManagerRegisterDeviceRemovalCallback(hid, removed, unsafeBitCast(self, to: UnsafeMutableRawPointer.self))
+        
+        RunLoop.current.run()
     }
 }
