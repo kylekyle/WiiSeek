@@ -19,23 +19,24 @@ class Wiimote {
         self.device = device
         self.number = UInt8(number)
         
-        self.rumble()
+        send(.muteSpeaker)
+        send(.enableSpeaker)
+        send(.writeMemory(0x04A20009, [0x01]))
+        send(.writeMemory(0x04A20001, [0x08]))
+        send(.configureSpeaker())
+        send(.writeMemory(0x04A20008, [0x01]))
+        send(.unmuteSpeaker)
+        print("speaker enabled")
+        //rumble()
         
-//        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {timer in
-//           // if self.data.ready {//&& self.control.ready {
-//                timer.invalidate()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            self.play()
+        }
+    }
 
-//                self.send(.muteSpeaker)
-//                self.send(.enableSpeaker)
-//                self.send(.writeMemory(0x04A20009, [0x01]))
-//                self.send(.writeMemory(0x04A20001, [0x08]))
-//                self.send(.configureSpeaker())
-//                self.send(.writeMemory(0x04A20008, [0x01]))
-//                self.send(.unmuteSpeaker)
-//
-//                self.play()
-            //}
-//        }
+    deinit {
+        print("Deallocating \(self)")
+        IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone))
     }
     
     @objc func play() {
@@ -49,35 +50,21 @@ class Wiimote {
             return
         }
         
-//        var start = 0
-//        var buffer: [UInt8] = []
-//
-//        for byte in stride(from: 0x33, to: 0xAA, by: 0x01) {
-//            buffer.append(contentsOf: [UInt8](repeating: UInt8(byte), count: 100))
-//        }
-        var buffer = [UInt8](repeating: 0x00, count: data.length)
-        data.getBytes(&buffer, length: data.length)
-//        for start in stride(from: 92, to: buffer.count, by: 20) {
-//            let begin = DispatchTime.now()
-//            let stop = min(start + 20, buffer.count)
-//            log("start=\(start) stop=\(stop) buffer.count=\(buffer.count)")
-//            self.send(.play(Array(buffer[start..<stop])))
-//            let end = DispatchTime.now()
-//            let delay = end.uptimeNanoseconds-begin.uptimeNanoseconds
-//            print(10000 - delay*1000000)
-//            usleep(UInt32(min(0, useconds_t(10000 - delay*1000000))))
-//        }
-//        var start = 92
-//        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) {timer in
-//            let stop = min(start + 20, buffer.count)
-//            self.send(.play(Array(buffer[start..<stop])))
-//
-//            if stop >= buffer.count {
-//                timer.invalidate()
-//            } else {
-//                start = stop
-//            }
-//        }
+//        var buffer = [UInt8](repeating: 0x00, count: data.length)
+//        data.getBytes(&buffer, length: data.length)
+        
+        // 1 in 3 runs or so, this produces static 
+        var start = 0
+        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) {timer in
+            let stop = min(start + 20, data.count)
+            self.send(.play(Array(data[start..<stop])))
+            print(Array(data[start..<stop]))
+            if stop >= data.count {
+                timer.invalidate()
+            } else {
+                start = stop
+            }
+        }
     }
     
     func rumble(duration: Double = 0.5) {
@@ -94,7 +81,7 @@ class Wiimote {
             report.append(contentsOf: String(format: "%02hhx ", byte))
         }
         
-        log("\(self): sending [\(report)]")
+        //log("\(self): sending [\(report)]")
         
         let ioreturn = IOHIDDeviceSetReport(
             device,

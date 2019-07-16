@@ -10,7 +10,7 @@
 		272A1BF322C53614009859A5 /* Audio.au in Resources */ = {isa = PBXBuildFile; fileRef = 272A1BF222C53614009859A5 /* Audio.au */; };
 		272A1BF522C54E8A009859A5 /* Command.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272A1BF422C54E8A009859A5 /* Command.swift */; };
 		27674AD022C5B774004BBABA /* open.wav in Resources */ = {isa = PBXBuildFile; fileRef = 27674ACF22C5B774004BBABA /* open.wav */; };
-		276F376522BB3CBB00207762 /* Manager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276F376422BB3CBB00207762 /* Manager.swift */; };
+		276F376522BB3CBB00207762 /* Monitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 276F376422BB3CBB00207762 /* Monitor.swift */; };
 		27955EFE22B6B6CB005BD382 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27955EFD22B6B6CB005BD382 /* AppDelegate.swift */; };
 		27955F0022B6B6CB005BD382 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27955EFF22B6B6CB005BD382 /* ViewController.swift */; };
 		27955F0222B6B6CD005BD382 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 27955F0122B6B6CD005BD382 /* Assets.xcassets */; };
@@ -26,7 +26,7 @@
 		272A1BF222C53614009859A5 /* Audio.au */ = {isa = PBXFileReference; lastKnownFileType = audio.au; path = Audio.au; sourceTree = "<group>"; };
 		272A1BF422C54E8A009859A5 /* Command.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Command.swift; sourceTree = "<group>"; };
 		27674ACF22C5B774004BBABA /* open.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = open.wav; sourceTree = "<group>"; };
-		276F376422BB3CBB00207762 /* Manager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Manager.swift; sourceTree = "<group>"; };
+		276F376422BB3CBB00207762 /* Monitor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Monitor.swift; sourceTree = "<group>"; };
 		27955EFA22B6B6CB005BD382 /* WiiSeek.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WiiSeek.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		27955EFD22B6B6CB005BD382 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		27955EFF22B6B6CB005BD382 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -76,7 +76,7 @@
 				272A1BF222C53614009859A5 /* Audio.au */,
 				27674ACF22C5B774004BBABA /* open.wav */,
 				27ADC53D22C037BD0059B1D9 /* WiiSeek.icns */,
-				276F376422BB3CBB00207762 /* Manager.swift */,
+				276F376422BB3CBB00207762 /* Monitor.swift */,
 				27D4D3AF22BEA7F7000933BB /* Wiimote.swift */,
 				27D4D3AD22BD7AD9000933BB /* PubSub.swift */,
 				27955EFD22B6B6CB005BD382 /* AppDelegate.swift */,
@@ -167,7 +167,7 @@
 			files = (
 				27955F0022B6B6CB005BD382 /* ViewController.swift in Sources */,
 				27955EFE22B6B6CB005BD382 /* AppDelegate.swift in Sources */,
-				276F376522BB3CBB00207762 /* Manager.swift in Sources */,
+				276F376522BB3CBB00207762 /* Monitor.swift in Sources */,
 				272A1BF522C54E8A009859A5 /* Command.swift in Sources */,
 				27D4D3B022BEA7F7000933BB /* Wiimote.swift in Sources */,
 				27D4D3AE22BD7AD9000933BB /* PubSub.swift in Sources */,

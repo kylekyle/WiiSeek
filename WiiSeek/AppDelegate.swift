@@ -10,13 +10,15 @@ import Cocoa
 
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
-    let manager = Manager()
+    var thread: Thread?
+    var monitor: Monitor = Monitor()
     
     func applicationDidFinishLaunching(_ notification: Notification) {
-        Thread(
-            target: self.manager,
-            selector:#selector(self.manager.start),
-            object: nil
-        ).start()
+        monitor.start()
+    }
+    
+    func applicationWillTerminate(_ notification: Notification) {
+        print("terminating")
+        monitor.stop()
     }
 }
