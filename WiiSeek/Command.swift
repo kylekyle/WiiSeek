@@ -44,18 +44,13 @@ struct Command {
             buffer.append(contentsOf: Array(repeating: 0, count: 20-data.count))
         }
         
-        //  print(buffer)
-        
         return Command(bytes: buffer)
     }
     
-    static func configureSpeaker(rate hzRate: Int = 4000, volume: Double = 1) -> Command {
+    static func configureSpeaker(rate: Int = 4096, volume: Double = 1.0) -> Command {
         let adpcm_yamaha: UInt8 = 0x00
-        let rate = UInt16(6000000/hzRate)
         let encodedVolume = UInt8(0x40 * volume)
-        print(rate)
-        print(UInt8(rate & 0xFF))
-        print(UInt8(rate >> 8))
+        
         return writeMemory(0x04a20001,
                            [0x00,
                             adpcm_yamaha,
@@ -67,8 +62,9 @@ struct Command {
         )
     }
     
-    static let muteSpeaker   = Command(bytes: [0x19, 0x04])
-    static let unmuteSpeaker = Command(bytes: [0x19, 0x00])
-    static let enableSpeaker = Command(bytes: [0x14, 0x04])
-    static let statusReport  = Command(bytes: [0x15, 0x00])
+    static let muteSpeaker    = Command(bytes: [0x19, 0x04])
+    static let unmuteSpeaker  = Command(bytes: [0x19, 0x00])
+    static let enableSpeaker  = Command(bytes: [0x14, 0x04])
+    static let disableSpeaker = Command(bytes: [0x14, 0x00])
+    static let statusReport   = Command(bytes: [0x15, 0x00])
 }

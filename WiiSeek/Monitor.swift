@@ -52,7 +52,7 @@ class Monitor {
     }
     
     func stop() {
-        print("Stop called")
+        print("Shutting down ...")
         
         for (device,_) in wiimotes {
             wiimotes.removeValue(forKey: device)

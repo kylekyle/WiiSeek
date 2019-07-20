@@ -19,6 +19,7 @@ class Wiimote {
         self.device = device
         self.number = UInt8(number)
         
+        // this sequence configures our speaker for 2kHz Yamaha ADPCM
         send(.muteSpeaker)
         send(.enableSpeaker)
         send(.writeMemory(0x04A20009, [0x01]))
@@ -26,44 +27,24 @@ class Wiimote {
         send(.configureSpeaker())
         send(.writeMemory(0x04A20008, [0x01]))
         send(.unmuteSpeaker)
-        print("speaker enabled")
-        //rumble()
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-            self.play()
-        }
+        rumble()
+        subscribe(.beep)   { _ in self.beep()   }
+        subscribe(.rumble) { _ in self.rumble() }
     }
 
     deinit {
         print("Deallocating \(self)")
         IOHIDDeviceClose(device, IOOptionBits(kIOHIDOptionsTypeNone))
     }
-    
-    @objc func play() {
-        log("PLAYING")
-        let sourceURL = URL(fileURLWithPath: Bundle.main.resourcePath!)
-        let audio = sourceURL.appendingPathComponent("Scale.wav")
-        log(audio.absoluteString)
-        
-        guard let data = NSData(contentsOf: audio) else {
-            log("could not load audio!")
-            return
+
+    func beep(duration: Double = 1) {
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.02, repeats: true) {_ in
+            self.send(.play(Array(repeating: [0xC3,0x3C], count: 10).flatMap{$0}))
         }
         
-//        var buffer = [UInt8](repeating: 0x00, count: data.length)
-//        data.getBytes(&buffer, length: data.length)
-        
-        // 1 in 3 runs or so, this produces static 
-        var start = 0
-        Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) {timer in
-            let stop = min(start + 20, data.count)
-            self.send(.play(Array(data[start..<stop])))
-            print(Array(data[start..<stop]))
-            if stop >= data.count {
-                timer.invalidate()
-            } else {
-                start = stop
-            }
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) {
+            timer.invalidate()
         }
     }
     
@@ -92,7 +73,7 @@ class Wiimote {
         );
         
         if ioreturn != kIOReturnSuccess {
-            log("\(self): send error (IOReturn \(ioreturn & 0x3fff))")
+            print("\(self): send error (IOReturn \(ioreturn & 0x3fff))")
         }
     }
     

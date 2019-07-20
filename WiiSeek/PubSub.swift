@@ -6,12 +6,11 @@
 //  Copyright © 2019 Kyle King. All rights reserved.
 //
 
-import os.log
 import Foundation
 
 enum Topic {
-    case log
-    case stopSearch
+    case beep
+    case rumble
 }
 
 func publish(_ topic: Topic, _ object: Any? = nil) {
